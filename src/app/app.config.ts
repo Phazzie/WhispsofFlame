@@ -13,6 +13,7 @@ import { NavigationPort } from '../core/ports/navigation.port';
 // Import adapters
 import { IndexedDbAdapter } from '../adapters/storage/indexeddb.adapter';
 import { LocalWebSocketAdapter } from '../adapters/sync/local-ws.adapter';
+import { AblyAdapter } from '../adapters/sync/ably.adapter';
 import { GuestAuthAdapter } from '../adapters/auth/guest-auth.adapter';
 import { ConsoleAdapter } from '../adapters/errors/console.adapter';
 import { AngularRouterAdapter } from '../adapters/navigation/angular-router.adapter';
@@ -34,7 +35,7 @@ export const appConfig: ApplicationConfig = {
     {
       provide: SyncBusPort,
       useClass: environment.syncBackend === 'netlify'
-        ? LocalWebSocketAdapter // TODO: NetlifyWebSocketAdapter when ready
+        ? AblyAdapter
         : LocalWebSocketAdapter
     },
 

@@ -217,7 +217,7 @@ export class IndexedDbAdapter extends TaskStorePort {
       await tx.done;
 
       // Notify all watchers
-      for (const [sessionId, subject] of this.sessionSubjects.entries()) {
+      for (const subject of this.sessionSubjects.values()) {
         subject.next([]);
       }
     } catch (error) {

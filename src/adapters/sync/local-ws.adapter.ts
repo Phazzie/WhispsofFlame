@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+wimport { Injectable } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 import { SyncBusPort } from '../../core/ports/sync-bus.port';
 import {
@@ -10,6 +10,7 @@ import {
   PublishError,
 } from '../../core/errors/sync.error';
 import { getErrorMessage } from '../../shared/utils/error.util';
+import { environment } from '../../environments/environment';
 
 // Use browser's native WebSocket (globally available, no import needed)
 type ConnectionStatus = 'connected' | 'disconnected' | 'error';
@@ -42,7 +43,7 @@ export class LocalWebSocketAdapter extends SyncBusPort {
     }
 
     return new Promise((resolve, reject) => {
-      try {
+      try {environment.wsUrl
         this.ws = new WebSocket(`ws://localhost:${this.port}`);
 
         const joinTimeout = setTimeout(() => {
@@ -110,7 +111,7 @@ export class LocalWebSocketAdapter extends SyncBusPort {
           this.currentSessionId = null;
           this.currentUserId = null;
         };
-
+_
         this.ws.onerror = (event: Event) => {
           clearTimeout(joinTimeout);
           this.statusSubject.next('error');
