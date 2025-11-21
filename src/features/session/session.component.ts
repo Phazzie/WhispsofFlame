@@ -46,38 +46,41 @@ export class SessionComponent implements OnInit, OnDestroy {
   ) {}
 
   async ngOnInit(): Promise<void> {
-    // Get sessionId from route params
     this.sessionId = this.route.snapshot.paramMap.get('sessionId') || '';
 
     if (!this.sessionId) {
       console.error('No sessionId provided in route');
+      this.connectionStatus.set('error');
       return;
     }
 
     try {
-      // Get current user from AuthProvider
       let currentUser = await this.authProvider.currentUser();
 
-      // If no user, sign in as guest
+      // Sign in as guest if not authenticated
       if (!currentUser) {
-        currentUser = await this.authProvider.signIn();
+        try {
+          currentUser = await this.authProvider.signIn();
+          console.log('Signed in as guest:', currentUser.displayName);
+        } catch (signInError) {
+          console.error('Failed to sign in as guest:', signInError);
+          this.connectionStatus.set('error');
+          // Don't proceed without a user
+          return;
+        }
       }
 
       this.user.set(currentUser);
 
-      // Join session via TaskService
+      // Join session
       await this.taskService.joinSession(this.sessionId);
 
-      // Subscribe to sync status
-      this.statusSubscription = this.syncBus.status().subscribe({
-        next: (status) => {
+      // Subscribe to connection status
+      this.statusSubscription = this.syncBus
+        .status()
+        .subscribe((status) => {
           this.connectionStatus.set(status);
-        },
-        error: (err) => {
-          console.error('Status subscription error:', err);
-          this.connectionStatus.set('error');
-        },
-      });
+        });
     } catch (error) {
       console.error('Error initializing session:', error);
       this.connectionStatus.set('error');

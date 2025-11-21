@@ -6,6 +6,7 @@ import { SyncMessage, SyncMessageSchemaV1 } from '../models/sync-message.contrac
 import { TaskStorePort } from '../ports/task-store.port';
 import { SyncBusPort } from '../ports/sync-bus.port';
 import { AuthProviderPort } from '../ports/auth-provider.port';
+import { ConflictError } from '../errors';
 
 /**
  * TaskService v1.0
@@ -131,35 +132,45 @@ export class TaskService {
       throw new Error('User not authenticated');
     }
 
-    // Update timestamp and increment version
     const updatedTask: Task = {
       ...task,
       updatedAt: new Date().toISOString(),
-      version: task.version + 1,
+      // Don't increment version here (handled by adapter)
     };
 
-    // Validate task
     TaskSchemaV1.parse(updatedTask);
 
-    // Save to store (handles version conflict)
-    const savedTask = await this.taskStore.save(updatedTask);
+    try {
+      const savedTask = await this.taskStore.save(updatedTask);
 
-    // Publish sync message
-    const syncMessage: SyncMessage = {
-      type: 'TASK_UPDATED',
-      payload: savedTask,
-      timestamp: new Date().toISOString(),
-      userId: user.id,
-    };
-    SyncMessageSchemaV1.parse(syncMessage);
-    await this.syncBus.publish(syncMessage);
+      const syncMessage: SyncMessage = {
+        type: 'TASK_UPDATED',
+        payload: savedTask,
+        timestamp: new Date().toISOString(),
+        userId: user.id,
+      };
+      SyncMessageSchemaV1.parse(syncMessage);
+      await this.syncBus.publish(syncMessage);
 
-    // Update signal
-    this.tasksSignal.update((tasks) =>
-      tasks.map((t) => (t.id === savedTask.id ? savedTask : t))
-    );
+      // Update local signal
+      this.tasksSignal.update((tasks) =>
+        tasks.map((t) => (t.id === savedTask.id ? savedTask : t))
+      );
 
-    return savedTask;
+      return savedTask;
+    } catch (error) {
+      // Handle version conflict by reloading from storage
+      if (error instanceof ConflictError) {
+        console.warn('Version conflict detected, reloading tasks', error);
+
+        if (this.currentSessionId) {
+          const tasks = await this.taskStore.listBySession(this.currentSessionId);
+          this.tasksSignal.set(tasks);
+        }
+      }
+
+      throw error; // Re-throw to notify caller
+    }
   }
 
   /**

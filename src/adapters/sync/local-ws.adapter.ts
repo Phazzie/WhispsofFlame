@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
-import * as WS from 'ws';
 import { SyncBusPort } from '../../core/ports/sync-bus.port';
 import {
   SyncMessage,
@@ -11,9 +10,8 @@ import {
   PublishError,
 } from '../../core/errors/sync.error';
 
+// Use browser's native WebSocket (globally available, no import needed)
 type ConnectionStatus = 'connected' | 'disconnected' | 'error';
-type WebSocket = WS.WebSocket;
-const WebSocket = WS.WebSocket;
 
 interface ServerMessage {
   type: 'joined' | 'message' | 'error';
@@ -54,7 +52,7 @@ export class LocalWebSocketAdapter extends SyncBusPort {
           );
         }, 5000);
 
-        this.ws.on('open', () => {
+        this.ws.onopen = () => {
           if (!this.ws) {
             clearTimeout(joinTimeout);
             reject(new ConnectionError('WebSocket is null after open event'));
@@ -69,11 +67,11 @@ export class LocalWebSocketAdapter extends SyncBusPort {
               userId,
             })
           );
-        });
+        };
 
-        this.ws.on('message', (rawMessage: Buffer) => {
+        this.ws.onmessage = (event: MessageEvent) => {
           try {
-            const message = JSON.parse(rawMessage.toString()) as ServerMessage;
+            const message = JSON.parse(event.data) as ServerMessage;
 
             if (message.type === 'joined' && message.success) {
               clearTimeout(joinTimeout);
@@ -102,24 +100,24 @@ export class LocalWebSocketAdapter extends SyncBusPort {
           } catch (error) {
             console.error('[LocalWS] Error parsing message:', error);
           }
-        });
+        };
 
-        this.ws.on('close', () => {
+        this.ws.onclose = () => {
           clearTimeout(joinTimeout);
           this.statusSubject.next('disconnected');
           this.currentSessionId = null;
           this.currentUserId = null;
-        });
+        };
 
-        this.ws.on('error', (error) => {
+        this.ws.onerror = (event: Event) => {
           clearTimeout(joinTimeout);
           this.statusSubject.next('error');
           reject(
             new ConnectionError(
-              `WebSocket error for session ${sessionId}: ${error.message}`
+              `WebSocket error for session ${sessionId}`
             )
           );
-        });
+        };
       } catch (error) {
         reject(
           new ConnectionError(
@@ -144,13 +142,13 @@ export class LocalWebSocketAdapter extends SyncBusPort {
           // Send leave message
           this.ws.send(JSON.stringify({ type: 'leave' }));
 
-          this.ws.on('close', () => {
+          this.ws.onclose = () => {
             this.ws = null;
             this.currentSessionId = null;
             this.currentUserId = null;
             this.statusSubject.next('disconnected');
             resolve();
-          });
+          };
 
           this.ws.close();
         } else {
@@ -177,42 +175,21 @@ export class LocalWebSocketAdapter extends SyncBusPort {
       throw new PublishError('WebSocket is not connected');
     }
 
-    return new Promise((resolve, reject) => {
-      try {
-        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-          reject(new PublishError('WebSocket is not connected'));
-          return;
-        }
-
-        this.ws.send(
-          JSON.stringify({
-            type: 'message',
-            data: message,
-          }),
-          (error) => {
-            if (error) {
-              reject(
-                new PublishError(
-                  `Failed to send message: ${
-                    error instanceof Error ? error.message : String(error)
-                  }`
-                )
-              );
-            } else {
-              resolve();
-            }
-          }
-        );
-      } catch (error) {
-        reject(
-          new PublishError(
-            `Failed to publish message: ${
-              error instanceof Error ? error.message : String(error)
-            }`
-          )
-        );
-      }
-    });
+    try {
+      // Browser WebSocket send() is synchronous (no callback support)
+      this.ws.send(
+        JSON.stringify({
+          type: 'message',
+          data: message,
+        })
+      );
+    } catch (error) {
+      throw new PublishError(
+        `Failed to publish message: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
   }
 
   subscribe(): Observable<SyncMessage> {

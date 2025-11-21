@@ -13,7 +13,7 @@ interface ServerMessage {
   data?: unknown;
 }
 
-const PORT = parseInt(process.env.WS_PORT || '8080', 10);
+const PORT = parseInt(process.env['WS_PORT'] || '8080', 10);
 const clients = new Map<WebSocket, ClientConnection>();
 
 const wss = new WebSocketServer({ port: PORT });
