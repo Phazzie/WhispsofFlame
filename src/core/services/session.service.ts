@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Router } from '@angular/router';
+import { NavigationPort } from '../ports/navigation.port';
 import { AuthProviderPort } from '../ports/auth-provider.port';
 import { ValidationError } from '../errors/validation.error';
 import { generateSessionCode, validateSessionCode } from '../../shared/utils/session-code.util';
@@ -9,7 +9,7 @@ import { generateSessionCode, validateSessionCode } from '../../shared/utils/ses
 })
 export class SessionService {
   constructor(
-    private router: Router,
+    private navigation: NavigationPort,
     private authProvider: AuthProviderPort
   ) {}
 
@@ -19,7 +19,7 @@ export class SessionService {
    */
   async createSession(): Promise<string> {
     const code = generateSessionCode();
-    await this.router.navigate(['/s', code]);
+    await this.navigation.navigate(['/s', code]);
     return code;
   }
 
@@ -45,7 +45,7 @@ export class SessionService {
     }
 
     // Navigate to session
-    await this.router.navigate(['/s', code]);
+    await this.navigation.navigate(['/s', code]);
   }
 
   /**
@@ -53,7 +53,7 @@ export class SessionService {
    * @returns The current session code or null if not in a session
    */
   getCurrentSessionId(): string | null {
-    const urlSegments = this.router.url.split('/');
+    const urlSegments = this.navigation.getCurrentUrl().split('/');
 
     // Check if URL matches /s/{code} pattern
     if (urlSegments.length >= 3 && urlSegments[1] === 's') {

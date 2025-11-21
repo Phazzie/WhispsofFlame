@@ -49,7 +49,6 @@ export class SessionComponent implements OnInit, OnDestroy {
     this.sessionId = this.route.snapshot.paramMap.get('sessionId') || '';
 
     if (!this.sessionId) {
-      console.error('No sessionId provided in route');
       this.connectionStatus.set('error');
       return;
     }
@@ -61,9 +60,7 @@ export class SessionComponent implements OnInit, OnDestroy {
       if (!currentUser) {
         try {
           currentUser = await this.authProvider.signIn();
-          console.log('Signed in as guest:', currentUser.displayName);
         } catch (signInError) {
-          console.error('Failed to sign in as guest:', signInError);
           this.connectionStatus.set('error');
           // Don't proceed without a user
           return;
@@ -82,7 +79,6 @@ export class SessionComponent implements OnInit, OnDestroy {
           this.connectionStatus.set(status);
         });
     } catch (error) {
-      console.error('Error initializing session:', error);
       this.connectionStatus.set('error');
     }
   }
@@ -99,7 +95,7 @@ export class SessionComponent implements OnInit, OnDestroy {
       this.newTaskContent = '';
       this.isSecret = false;
     } catch (error) {
-      console.error('Error creating task:', error);
+      // Error handled by service
     }
   }
 
@@ -114,7 +110,7 @@ export class SessionComponent implements OnInit, OnDestroy {
     try {
       await this.taskService.leaveSession();
     } catch (error) {
-      console.error('Error leaving session:', error);
+      // Error handled by service
     }
   }
 }

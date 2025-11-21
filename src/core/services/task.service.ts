@@ -3,10 +3,12 @@ import { Subscription } from 'rxjs';
 import { v4 as uuidv4 } from 'uuid';
 import { Task, TaskSchemaV1, taskIsRevealed } from '../models/task.contract';
 import { SyncMessage, SyncMessageSchemaV1 } from '../models/sync-message.contract';
+import { User } from '../models/user.contract';
 import { TaskStorePort } from '../ports/task-store.port';
 import { SyncBusPort } from '../ports/sync-bus.port';
 import { AuthProviderPort } from '../ports/auth-provider.port';
 import { ConflictError } from '../errors';
+import { getCurrentTimestamp } from '../../shared/utils/timestamp.util';
 
 /**
  * TaskService v1.0
@@ -43,10 +45,7 @@ export class TaskService {
    * @throws {StorageError} if task loading fails
    */
   async joinSession(sessionId: string): Promise<void> {
-    const user = await this.authProvider.currentUser();
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
+    const user = await this.requireAuthentication();
 
     // Connect to sync bus
     await this.syncBus.connect(sessionId, user.id);
@@ -75,16 +74,13 @@ export class TaskService {
    * @throws {PublishError} if sync publish fails
    */
   async createTask(content: string, isSecret: boolean): Promise<Task> {
-    const user = await this.authProvider.currentUser();
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
+    const user = await this.requireAuthentication();
 
     if (!this.currentSessionId) {
       throw new Error('No active session');
     }
 
-    const now = new Date().toISOString();
+    const now = getCurrentTimestamp();
     const task: Task = {
       id: uuidv4(),
       sessionId: this.currentSessionId,
@@ -105,17 +101,10 @@ export class TaskService {
     const savedTask = await this.taskStore.save(task);
 
     // Publish sync message
-    const syncMessage: SyncMessage = {
-      type: 'TASK_CREATED',
-      payload: savedTask,
-      timestamp: new Date().toISOString(),
-      userId: user.id,
-    };
-    SyncMessageSchemaV1.parse(syncMessage);
-    await this.syncBus.publish(syncMessage);
+    await this.publishSyncMessage('TASK_CREATED', savedTask, user.id);
 
     // Optimistically update signal
-    this.tasksSignal.update((tasks) => [...tasks, savedTask]);
+    this.addTaskToSignal(savedTask);
 
     return savedTask;
   }
@@ -127,14 +116,11 @@ export class TaskService {
    * @throws {PublishError} if sync publish fails
    */
   async updateTask(task: Task): Promise<Task> {
-    const user = await this.authProvider.currentUser();
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
+    const user = await this.requireAuthentication();
 
     const updatedTask: Task = {
       ...task,
-      updatedAt: new Date().toISOString(),
+      updatedAt: getCurrentTimestamp(),
       // Don't increment version here (handled by adapter)
     };
 
@@ -143,19 +129,11 @@ export class TaskService {
     try {
       const savedTask = await this.taskStore.save(updatedTask);
 
-      const syncMessage: SyncMessage = {
-        type: 'TASK_UPDATED',
-        payload: savedTask,
-        timestamp: new Date().toISOString(),
-        userId: user.id,
-      };
-      SyncMessageSchemaV1.parse(syncMessage);
-      await this.syncBus.publish(syncMessage);
+      // Publish sync message
+      await this.publishSyncMessage('TASK_UPDATED', savedTask, user.id);
 
       // Update local signal
-      this.tasksSignal.update((tasks) =>
-        tasks.map((t) => (t.id === savedTask.id ? savedTask : t))
-      );
+      this.updateTaskInSignal(savedTask);
 
       return savedTask;
     } catch (error) {
@@ -179,26 +157,16 @@ export class TaskService {
    * @throws {PublishError} if sync publish fails
    */
   async deleteTask(taskId: string): Promise<void> {
-    const user = await this.authProvider.currentUser();
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
+    const user = await this.requireAuthentication();
 
     // Delete from store
     await this.taskStore.delete(taskId);
 
     // Publish sync message
-    const syncMessage: SyncMessage = {
-      type: 'TASK_DELETED',
-      payload: { id: taskId },
-      timestamp: new Date().toISOString(),
-      userId: user.id,
-    };
-    SyncMessageSchemaV1.parse(syncMessage);
-    await this.syncBus.publish(syncMessage);
+    await this.publishSyncMessage('TASK_DELETED', { id: taskId }, user.id);
 
     // Update signal
-    this.tasksSignal.update((tasks) => tasks.filter((t) => t.id !== taskId));
+    this.removeTaskFromSignal(taskId);
   }
 
   /**
@@ -206,10 +174,7 @@ export class TaskService {
    * @throws {Error} if task not found
    */
   async voteReveal(taskId: string): Promise<void> {
-    const user = await this.authProvider.currentUser();
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
+    const user = await this.requireAuthentication();
 
     const task = this.tasks().find((t) => t.id === taskId);
     if (!task) {
@@ -226,17 +191,14 @@ export class TaskService {
       await this.updateTask(updatedTask);
 
       // Publish VOTE_REVEAL sync message
-      const syncMessage: SyncMessage = {
-        type: 'VOTE_REVEAL',
-        payload: {
+      await this.publishSyncMessage(
+        'VOTE_REVEAL',
+        {
           taskId: task.id,
           userId: user.id,
         },
-        timestamp: new Date().toISOString(),
-        userId: user.id,
-      };
-      SyncMessageSchemaV1.parse(syncMessage);
-      await this.syncBus.publish(syncMessage);
+        user.id
+      );
     }
   }
 
@@ -267,27 +229,15 @@ export class TaskService {
 
     switch (message.type) {
       case 'TASK_CREATED':
-        this.tasksSignal.update((tasks) => {
-          // Avoid duplicates
-          if (tasks.some((t) => t.id === message.payload.id)) {
-            return tasks;
-          }
-          return [...tasks, message.payload];
-        });
+        this.addTaskToSignal(message.payload);
         break;
 
       case 'TASK_UPDATED':
-        this.tasksSignal.update((tasks) =>
-          tasks.map((t) =>
-            t.id === message.payload.id ? message.payload : t
-          )
-        );
+        this.updateTaskInSignal(message.payload);
         break;
 
       case 'TASK_DELETED':
-        this.tasksSignal.update((tasks) =>
-          tasks.filter((t) => t.id !== message.payload.id)
-        );
+        this.removeTaskFromSignal(message.payload.id);
         break;
 
       case 'VOTE_REVEAL':
@@ -307,5 +257,64 @@ export class TaskService {
         );
         break;
     }
+  }
+
+  /**
+   * Require user authentication
+   * @throws {Error} if user not authenticated
+   */
+  private async requireAuthentication(): Promise<User> {
+    const user = await this.authProvider.currentUser();
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+    return user;
+  }
+
+  /**
+   * Publish a sync message
+   */
+  private async publishSyncMessage(
+    type: SyncMessage['type'],
+    payload: unknown,
+    userId: string
+  ): Promise<void> {
+    const syncMessage: SyncMessage = {
+      type,
+      payload,
+      timestamp: getCurrentTimestamp(),
+      userId,
+    } as SyncMessage;
+
+    SyncMessageSchemaV1.parse(syncMessage);
+    await this.syncBus.publish(syncMessage);
+  }
+
+  /**
+   * Update a task in the signal
+   */
+  private updateTaskInSignal(updatedTask: Task): void {
+    this.tasksSignal.update((tasks) =>
+      tasks.map((t) => (t.id === updatedTask.id ? updatedTask : t))
+    );
+  }
+
+  /**
+   * Remove a task from the signal
+   */
+  private removeTaskFromSignal(taskId: string): void {
+    this.tasksSignal.update((tasks) =>
+      tasks.filter((t) => t.id !== taskId)
+    );
+  }
+
+  /**
+   * Add a task to the signal
+   */
+  private addTaskToSignal(task: Task): void {
+    this.tasksSignal.update((tasks) => {
+      if (tasks.some((t) => t.id === task.id)) return tasks;
+      return [...tasks, task];
+    });
   }
 }

@@ -5,6 +5,8 @@ import { TaskStorePort } from '../../core/ports/task-store.port';
 import { Task, TaskSchemaV1 } from '../../core/models/task.contract';
 import { StorageError, ConflictError } from '../../core/errors';
 import { ErrorReporterPort } from '../../core/ports/error-reporter.port';
+import { getErrorMessage } from '../../shared/utils/error.util';
+import { getCurrentTimestamp } from '../../shared/utils/timestamp.util';
 
 const DB_NAME = 'whisps-db';
 const STORE_NAME = 'tasks';
@@ -53,14 +55,9 @@ export class IndexedDbAdapter extends TaskStorePort {
 
       return this.db;
     } catch (error) {
-      const storageError = new StorageError(
-        `Failed to initialize IndexedDB: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-      this.errorReporter.captureException(storageError, {
-        operation: 'initDb',
+      this.handleStorageError(error, 'initialize IndexedDB', {
         dbName: DB_NAME,
       });
-      throw storageError;
     }
   }
 
@@ -81,7 +78,7 @@ export class IndexedDbAdapter extends TaskStorePort {
           return TaskSchemaV1.parse(task);
         } catch (error) {
           throw new StorageError(
-            `Invalid task data in storage: ${error instanceof Error ? error.message : 'Unknown validation error'}`
+            `Invalid task data in storage: ${getErrorMessage(error, 'Unknown validation error')}`
           );
         }
       });
@@ -92,14 +89,7 @@ export class IndexedDbAdapter extends TaskStorePort {
         throw error;
       }
 
-      const storageError = new StorageError(
-        `Failed to list tasks by session: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-      this.errorReporter.captureException(storageError, {
-        operation: 'listBySession',
-        sessionId,
-      });
-      throw storageError;
+      this.handleStorageError(error, 'list tasks by session', { sessionId });
     }
   }
 
@@ -112,14 +102,9 @@ export class IndexedDbAdapter extends TaskStorePort {
     try {
       validatedTask = TaskSchemaV1.parse(task);
     } catch (error) {
-      const storageError = new StorageError(
-        `Invalid task data: ${error instanceof Error ? error.message : 'Unknown validation error'}`
-      );
-      this.errorReporter.captureException(storageError, {
-        operation: 'save',
+      this.handleStorageError(error, 'validate task data', {
         taskId: task.id,
       });
-      throw storageError;
     }
 
     try {
@@ -141,7 +126,7 @@ export class IndexedDbAdapter extends TaskStorePort {
         validatedTask = {
           ...validatedTask,
           version: validatedTask.version + 1,
-          updatedAt: new Date().toISOString(),
+          updatedAt: getCurrentTimestamp(),
         };
       }
 
@@ -163,25 +148,15 @@ export class IndexedDbAdapter extends TaskStorePort {
         (error.name === 'QuotaExceededError' ||
           (error as DOMException).name === 'QuotaExceededError')
       ) {
-        const storageError = new StorageError(
-          'Storage quota exceeded. Please free up space.'
-        );
-        this.errorReporter.captureException(storageError, {
-          operation: 'save',
+        this.handleStorageError(error, 'save task (quota exceeded)', {
           taskId: validatedTask.id,
           errorType: 'QuotaExceededError',
         });
-        throw storageError;
       }
 
-      const storageError = new StorageError(
-        `Failed to save task: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-      this.errorReporter.captureException(storageError, {
-        operation: 'save',
+      this.handleStorageError(error, 'save task', {
         taskId: validatedTask.id,
       });
-      throw storageError;
     }
   }
 
@@ -204,14 +179,7 @@ export class IndexedDbAdapter extends TaskStorePort {
         await this.notifyWatchers(task.sessionId);
       }
     } catch (error) {
-      const storageError = new StorageError(
-        `Failed to delete task: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-      this.errorReporter.captureException(storageError, {
-        operation: 'delete',
-        taskId,
-      });
-      throw storageError;
+      this.handleStorageError(error, 'delete task', { taskId });
     }
   }
 
@@ -253,13 +221,7 @@ export class IndexedDbAdapter extends TaskStorePort {
         subject.next([]);
       }
     } catch (error) {
-      const storageError = new StorageError(
-        `Failed to clear storage: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-      this.errorReporter.captureException(storageError, {
-        operation: 'clear',
-      });
-      throw storageError;
+      this.handleStorageError(error, 'clear storage');
     }
   }
 
@@ -279,5 +241,23 @@ export class IndexedDbAdapter extends TaskStorePort {
         });
       }
     }
+  }
+
+  /**
+   * Handle storage errors consistently
+   */
+  private handleStorageError(
+    error: unknown,
+    operation: string,
+    context?: Record<string, unknown>
+  ): never {
+    const storageError = new StorageError(
+      `Failed to ${operation}: ${getErrorMessage(error)}`
+    );
+    this.errorReporter.captureException(storageError, {
+      operation,
+      ...context,
+    });
+    throw storageError;
   }
 }

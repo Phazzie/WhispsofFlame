@@ -4,8 +4,9 @@ import { AuthProviderPort } from '../../core/ports/auth-provider.port';
 import { User, UserSchemaV1 } from '../../core/models/user.contract';
 import { AuthError } from '../../core/errors/auth.error';
 import { generateAnimalName } from '../../shared/utils/animal-name.util';
-
-const STORAGE_KEY = 'whisps_guest_user';
+import { getCurrentTimestamp } from '../../shared/utils/timestamp.util';
+import { getErrorMessage } from '../../shared/utils/error.util';
+import { STORAGE_KEYS } from '../../shared/constants/storage-keys';
 
 @Injectable()
 export class GuestAuthAdapter extends AuthProviderPort {
@@ -34,7 +35,7 @@ export class GuestAuthAdapter extends AuthProviderPort {
         id: crypto.randomUUID(),
         displayName,
         avatar,
-        createdAt: new Date().toISOString(),
+        createdAt: getCurrentTimestamp(),
         isGuest: true,
       };
 
@@ -42,23 +43,20 @@ export class GuestAuthAdapter extends AuthProviderPort {
       const validatedUser = UserSchemaV1.parse(user);
 
       // Store in localStorage
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(validatedUser));
+      localStorage.setItem(STORAGE_KEYS.GUEST_USER, JSON.stringify(validatedUser));
 
       // Update subject
       this.userSubject.next(validatedUser);
 
       return validatedUser;
     } catch (error) {
-      if (error instanceof Error) {
-        throw new AuthError(`Failed to sign in: ${error.message}`);
-      }
-      throw new AuthError('Failed to sign in: Unknown error');
+      throw new AuthError(`Failed to sign in: ${getErrorMessage(error)}`);
     }
   }
 
   async signOut(): Promise<void> {
     // Clear localStorage
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(STORAGE_KEYS.GUEST_USER);
 
     // Emit null via onChange()
     this.userSubject.next(null);
@@ -70,7 +68,7 @@ export class GuestAuthAdapter extends AuthProviderPort {
 
   private loadUserFromStorage(): void {
     try {
-      const storedUser = localStorage.getItem(STORAGE_KEY);
+      const storedUser = localStorage.getItem(STORAGE_KEYS.GUEST_USER);
       if (storedUser) {
         const user = JSON.parse(storedUser);
         const validatedUser = UserSchemaV1.parse(user);
@@ -78,7 +76,7 @@ export class GuestAuthAdapter extends AuthProviderPort {
       }
     } catch (error) {
       // If validation fails, clear invalid data
-      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(STORAGE_KEYS.GUEST_USER);
       this.userSubject.next(null);
     }
   }

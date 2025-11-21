@@ -1,0 +1,96 @@
+
+> whisps-app@0.0.0 lint /home/user/WhispsofFlame
+> eslint . && stylelint '**/*.css'
+
+
+/home/user/WhispsofFlame/check-detailed.js
+  1:1  error  Parsing error: The keyword 'const' is reserved
+
+/home/user/WhispsofFlame/check-dom.js
+  1:1  error  Parsing error: The keyword 'const' is reserved
+
+/home/user/WhispsofFlame/check-errors.js
+  1:1  error  Parsing error: The keyword 'const' is reserved
+
+/home/user/WhispsofFlame/check-prod.js
+  1:1  error  Parsing error: The keyword 'const' is reserved
+
+/home/user/WhispsofFlame/check-router.js
+  1:1  error  Parsing error: The keyword 'const' is reserved
+
+/home/user/WhispsofFlame/check-wait.js
+  1:1  error  Parsing error: The keyword 'const' is reserved
+
+/home/user/WhispsofFlame/e2e/fixtures/test-helpers.ts
+   1:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   8:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  14:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  25:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  43:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  52:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  72:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/user/WhispsofFlame/e2e/specs/secret-reveal.spec.ts
+  8:3  error  'waitForTaskReveal' is defined but never used  @typescript-eslint/no-unused-vars
+  9:3  error  'getTaskContent' is defined but never used     @typescript-eslint/no-unused-vars
+
+/home/user/WhispsofFlame/screenshot-check.js
+  1:1  error  Parsing error: The keyword 'const' is reserved
+
+/home/user/WhispsofFlame/simple-check.js
+  1:1  error  Parsing error: The keyword 'const' is reserved
+
+/home/user/WhispsofFlame/src/adapters/auth/guest-auth.adapter.spec.ts
+  2:10  error  'AuthError' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/user/WhispsofFlame/src/adapters/errors/console.adapter.spec.ts
+  177:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/user/WhispsofFlame/src/adapters/errors/console.adapter.ts
+  41:11  error  'levelUpper' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/user/WhispsofFlame/src/adapters/storage/indexeddb.adapter.spec.ts
+   9:46  warning  Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  11:50  warning  Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  11:64  warning  Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  23:43  error    'options' is defined but never used. Allowed unused args must match /^_/u    @typescript-eslint/no-unused-vars
+  23:52  warning  Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  35:40  error    'mode' is defined but never used. Allowed unused args must match /^_/u       @typescript-eslint/no-unused-vars
+  41:32  warning  Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  44:21  error    'indexName' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  47:26  warning  Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  67:21  warning  Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  91:19  warning  Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  97:25  error    Require statement not part of import statement                               @typescript-eslint/no-var-requires
+  98:21  warning  Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+
+/home/user/WhispsofFlame/src/adapters/storage/indexeddb.adapter.ts
+  252:19  error  'sessionId' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/user/WhispsofFlame/src/adapters/sync/local-ws.adapter.ts
+  112:28  error  'event' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/home/user/WhispsofFlame/src/core/services/task.service.spec.ts
+    2:19  error    'of' is defined but never used            @typescript-eslint/no-unused-vars
+  535:62  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/user/WhispsofFlame/src/features/session/session.component.spec.ts
+    4:10  error    'of' is defined but never used            @typescript-eslint/no-unused-vars
+   18:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   20:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  223:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  228:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/user/WhispsofFlame/src/features/session/task-item/task-item.component.spec.ts
+  2:10  error  'DebugElement' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/user/WhispsofFlame/src/shared/components/button.component.ts
+  1:60  error  'signal' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/user/WhispsofFlame/src/shared/utils/session-code.util.spec.ts
+  65:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  66:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 46 problems (22 errors, 24 warnings)
+
+ ELIFECYCLE  Command failed with exit code 1.

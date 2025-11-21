@@ -38,7 +38,6 @@ export class ConsoleAdapter extends ErrorReporterPort {
    */
   captureMessage(message: string, level: 'info' | 'warning' | 'error'): void {
     const timestamp = this.formatTimestamp();
-    const levelUpper = level.toUpperCase();
 
     switch (level) {
       case 'info':

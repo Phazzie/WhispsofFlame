@@ -12,7 +12,7 @@ const { chromium } = require('@playwright/test');
 
   try {
     await page.goto('http://localhost:4200/', {
-      waitUntil: 'networkidle',
+      waitUntil: 'domcontentloaded',
       timeout: 10000
     });
 

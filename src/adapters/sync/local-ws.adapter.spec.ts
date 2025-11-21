@@ -102,7 +102,7 @@ describe('LocalWebSocketAdapter', () => {
   });
 
   beforeEach(() => {
-    adapter = new LocalWebSocketAdapter(TEST_PORT);
+    adapter = new LocalWebSocketAdapter();
   });
 
   afterEach(async () => {
@@ -162,7 +162,7 @@ describe('LocalWebSocketAdapter', () => {
     });
 
     it('should throw ConnectionError when server is unreachable', async () => {
-      const badAdapter = new LocalWebSocketAdapter(9999); // Non-existent server
+      const badAdapter = new LocalWebSocketAdapter(); // Non-existent server
 
       try {
         await badAdapter.connect(TEST_SESSION_ID, TEST_USER_ID_1);
@@ -283,7 +283,7 @@ describe('LocalWebSocketAdapter', () => {
     let adapter2: LocalWebSocketAdapter;
 
     beforeEach(async () => {
-      adapter2 = new LocalWebSocketAdapter(TEST_PORT);
+      adapter2 = new LocalWebSocketAdapter();
       await adapter.connect(TEST_SESSION_ID, TEST_USER_ID_1);
       await adapter2.connect(TEST_SESSION_ID, TEST_USER_ID_2);
     });
@@ -380,8 +380,8 @@ describe('LocalWebSocketAdapter', () => {
     const TEST_USER_ID_3 = '00000000-0000-0000-0000-000000000003';
 
     beforeEach(async () => {
-      adapter2 = new LocalWebSocketAdapter(TEST_PORT);
-      adapter3 = new LocalWebSocketAdapter(TEST_PORT);
+      adapter2 = new LocalWebSocketAdapter();
+      adapter3 = new LocalWebSocketAdapter();
 
       await adapter.connect(TEST_SESSION_ID, TEST_USER_ID_1);
       await adapter2.connect(TEST_SESSION_ID, TEST_USER_ID_2);
@@ -467,7 +467,7 @@ describe('LocalWebSocketAdapter', () => {
   describe('Error Handling', () => {
     it('should handle connection timeout gracefully', async () => {
       // Create adapter that will timeout (server won't exist)
-      const slowAdapter = new LocalWebSocketAdapter(9998);
+      const slowAdapter = new LocalWebSocketAdapter();
 
       try {
         await slowAdapter.connect(TEST_SESSION_ID, TEST_USER_ID_1);
@@ -478,7 +478,7 @@ describe('LocalWebSocketAdapter', () => {
     }, 10000);
 
     it('should handle disconnect when not connected', async () => {
-      const newAdapter = new LocalWebSocketAdapter(TEST_PORT);
+      const newAdapter = new LocalWebSocketAdapter();
 
       await newAdapter.disconnect();
       // No error thrown = success

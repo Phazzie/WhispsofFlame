@@ -9,6 +9,7 @@ import {
   ConnectionError,
   PublishError,
 } from '../../core/errors/sync.error';
+import { getErrorMessage } from '../../shared/utils/error.util';
 
 // Use browser's native WebSocket (globally available, no import needed)
 type ConnectionStatus = 'connected' | 'disconnected' | 'error';
@@ -27,10 +28,11 @@ export class LocalWebSocketAdapter extends SyncBusPort {
   private statusSubject = new Subject<ConnectionStatus>();
   private currentSessionId: string | null = null;
   private currentUserId: string | null = null;
-  private readonly port: number = 8080;
+  private readonly port: number;
 
   constructor() {
     super();
+    this.port = 8080; // TODO: Get from environment when DI supports it
     this.statusSubject.next('disconnected');
   }
 
@@ -121,9 +123,7 @@ export class LocalWebSocketAdapter extends SyncBusPort {
       } catch (error) {
         reject(
           new ConnectionError(
-            `Failed to create WebSocket connection: ${
-              error instanceof Error ? error.message : String(error)
-            }`
+            `Failed to create WebSocket connection: ${getErrorMessage(error, String(error))}`
           )
         );
       }
@@ -185,9 +185,7 @@ export class LocalWebSocketAdapter extends SyncBusPort {
       );
     } catch (error) {
       throw new PublishError(
-        `Failed to publish message: ${
-          error instanceof Error ? error.message : String(error)
-        }`
+        `Failed to publish message: ${getErrorMessage(error, String(error))}`
       );
     }
   }

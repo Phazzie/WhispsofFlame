@@ -5,8 +5,6 @@ import {
   createTask,
   getTaskId,
   voteReveal,
-  waitForTaskReveal,
-  getTaskContent
 } from '../fixtures/test-helpers';
 
 test.describe('Secret Task Reveal Feature', () => {

@@ -1,7 +1,7 @@
 export const environment = {
   production: true,
-  storageBackend: 'neon' as 'indexeddb' | 'neon',
-  syncBackend: 'netlify' as 'local-ws' | 'netlify',
-  authBackend: 'netlify' as 'guest' | 'netlify',
+  storageBackend: 'indexeddb' as 'indexeddb' | 'neon', // Not 'neon' until implemented
+  syncBackend: 'local-ws' as 'local-ws' | 'netlify',   // Not 'netlify' until implemented
+  authBackend: 'guest' as 'guest' | 'netlify',         // Not 'netlify' until implemented
   wsDevPort: 8080,
 };

@@ -8,12 +8,14 @@ import { TaskStorePort } from '../core/ports/task-store.port';
 import { SyncBusPort } from '../core/ports/sync-bus.port';
 import { AuthProviderPort } from '../core/ports/auth-provider.port';
 import { ErrorReporterPort } from '../core/ports/error-reporter.port';
+import { NavigationPort } from '../core/ports/navigation.port';
 
 // Import adapters
 import { IndexedDbAdapter } from '../adapters/storage/indexeddb.adapter';
 import { LocalWebSocketAdapter } from '../adapters/sync/local-ws.adapter';
 import { GuestAuthAdapter } from '../adapters/auth/guest-auth.adapter';
 import { ConsoleAdapter } from '../adapters/errors/console.adapter';
+import { AngularRouterAdapter } from '../adapters/navigation/angular-router.adapter';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -50,6 +52,12 @@ export const appConfig: ApplicationConfig = {
       useClass: environment.production
         ? ConsoleAdapter // TODO: SentryAdapter when ready
         : ConsoleAdapter
+    },
+
+    // Navigation adapter
+    {
+      provide: NavigationPort,
+      useClass: AngularRouterAdapter
     }
   ]
 };
