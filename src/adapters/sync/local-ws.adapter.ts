@@ -1,3 +1,4 @@
+import { Injectable } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 import * as WS from 'ws';
 import { SyncBusPort } from '../../core/ports/sync-bus.port';
@@ -21,17 +22,17 @@ interface ServerMessage {
   message?: string;
 }
 
+@Injectable()
 export class LocalWebSocketAdapter extends SyncBusPort {
   private ws: WebSocket | null = null;
   private messageSubject = new Subject<SyncMessage>();
   private statusSubject = new Subject<ConnectionStatus>();
   private currentSessionId: string | null = null;
   private currentUserId: string | null = null;
-  private readonly port: number;
+  private readonly port: number = 8080;
 
-  constructor(port: number = 8080) {
+  constructor() {
     super();
-    this.port = port;
     this.statusSubject.next('disconnected');
   }
 

@@ -1,3 +1,4 @@
+import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { AuthProviderPort } from '../../core/ports/auth-provider.port';
 import { User, UserSchemaV1 } from '../../core/models/user.contract';
@@ -6,6 +7,7 @@ import { generateAnimalName } from '../../shared/utils/animal-name.util';
 
 const STORAGE_KEY = 'whisps_guest_user';
 
+@Injectable()
 export class GuestAuthAdapter extends AuthProviderPort {
   private userSubject = new BehaviorSubject<User | null>(null);
 

@@ -1,3 +1,4 @@
+import { Injectable } from '@angular/core';
 import { openDB, IDBPDatabase } from 'idb';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { TaskStorePort } from '../../core/ports/task-store.port';
@@ -19,6 +20,7 @@ interface TaskStoreSchema {
   };
 }
 
+@Injectable()
 export class IndexedDbAdapter extends TaskStorePort {
   private db: IDBPDatabase<TaskStoreSchema> | null = null;
   private sessionSubjects = new Map<string, BehaviorSubject<Task[]>>();

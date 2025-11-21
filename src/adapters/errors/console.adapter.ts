@@ -1,8 +1,10 @@
+import { Injectable } from '@angular/core';
 import { ErrorReporterPort } from '../../core/ports/error-reporter.port';
 
 /**
  * Console-based error reporter for development and debugging
  */
+@Injectable()
 export class ConsoleAdapter extends ErrorReporterPort {
   // ANSI color codes for terminal output
   private readonly COLORS = {
